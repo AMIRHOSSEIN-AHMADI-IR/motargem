@@ -1,0 +1,281 @@
+<!--
+  @file index.html
+  خلاصه یک‌خطی: این فایل صفحه اصلی برنامه مترجم است که رابط کاربری اصلی را نمایش می‌دهد.
+  Dependencies: db.js, utils.js, httpErrors.js, api.js, main.js, theme.js, tailwindcss
+  NOTE: Public user-facing page.
+  Comments updated by AI: 2025-11-10
+-->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>مترجم</title>
+    <!-- Stylesheets and external scripts -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
+    />
+    <script src="theme.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // پیکربندی TailwindCSS برای فعال کردن حالت تاریک (dark mode).
+      tailwind.config = {
+        darkMode: "class",
+      };
+    </script>
+    <style>
+      /* تنظیم فونت پیش‌فرض برای عناصر اصلی صفحه */
+      body,
+      input,
+      textarea,
+      button,
+      select {
+        font-family: "Vazirmatn", sans-serif;
+      }
+      /* مخفی کردن اسکرول‌بار در تمام مرورگرها برای ظاهری تمیزتر */
+      *::-webkit-scrollbar {
+        display: none;
+      }
+      * {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
+    <!-- کانتینر برای نمایش اعلان‌های موقت (Toast Notifications) در بالای صفحه -->
+    <div
+      id="toast-container"
+      class="fixed top-0 inset-x-0 z-50 flex flex-col items-center p-4 space-y-2 pointer-events-none"
+    ></div>
+
+    <div class="min-h-screen flex flex-col">
+      <!-- هدر صفحه شامل عنوان و منوی ناوبری اصلی -->
+      <header class="bg-white dark:bg-gray-800">
+        <nav class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between h-16">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+              مترجم
+            </h1>
+            <!-- لینک‌های ناوبری به صفحات دیگر برنامه -->
+            <div class="flex items-baseline space-s-8">
+              <a
+                href="/"
+                class="text-blue-600 dark:text-blue-400 font-semibold px-3 py-2 rounded-md text-sm"
+                aria-current="page"
+                >مترجم</a
+              >
+              <a
+                href="/history.html"
+                class="text-gray-600 dark:text-gray-300 lg:hover:text-blue-600 dark:lg:hover:text-blue-400 px-3 py-2 rounded-md text-sm"
+                >تاریخچه</a
+              >
+              <a
+                href="/settings.html"
+                class="text-gray-600 dark:text-gray-300 lg:hover:text-blue-600 dark:lg:hover:text-blue-400 px-3 py-2 rounded-md text-sm"
+                >تنظیمات</a
+              >
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      <!-- محتوای اصلی صفحه که شامل فرم ترجمه است -->
+      <main
+        class="flex-grow w-full max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8"
+      >
+        <!-- هشدار عدم تنظیم کلید API -->
+        <div
+          id="api-key-warning"
+          class="hidden bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 p-4 rounded-lg mb-6 text-center"
+        >
+          کلید API تنظیم نشده است. لطفاً برای استفاده از مترجم به
+          <a
+            href="/settings.html"
+            class="font-bold underline hover:text-yellow-900 dark:hover:text-yellow-200"
+            >صفحه تنظیمات</a
+          >
+          بروید.
+        </div>
+
+        <div class="flex flex-col space-y-2">
+          <!-- کنترلرهای انتخاب زبان -->
+          <div class="flex items-center justify-between gap-x-2">
+            <!-- دکمه انتخاب زبان مبدأ -->
+            <button
+              type="button"
+              id="source-lang-button"
+              class="flex-1 text-center py-3 px-4 bg-white dark:bg-gray-800 rounded-xl text-gray-800 dark:text-gray-200 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              فارسی
+            </button>
+
+            <!-- دکمه جابجایی زبان‌ها -->
+            <button
+              id="swap-button"
+              title="جابجایی زبان‌ها"
+              class="flex-shrink-0 p-3 bg-white dark:bg-gray-800 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-700 rounded-full transition-colors duration-200"
+            >
+              <svg
+                class="h-5 w-5 text-gray-600 dark:text-gray-300"
+                fill="none"
+                stroke="currentColor"
+              >
+                <use href="/icons.svg#icon-swap"></use>
+              </svg>
+            </button>
+
+            <!-- دکمه انتخاب زبان مقصد -->
+            <button
+              type="button"
+              id="target-lang-button"
+              class="flex-1 text-center py-3 px-4 bg-white dark:bg-gray-800 rounded-xl text-gray-800 dark:text-gray-200 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              انگلیسی
+            </button>
+          </div>
+
+          <!-- ناحیه ورود متن مبدأ و کنترلرهای آن -->
+          <div
+            class="bg-white dark:bg-gray-800 rounded-2xl transition-shadow duration-200 focus-within:ring-2 focus-within:ring-blue-600"
+          >
+            <textarea
+              id="source-text"
+              rows="8"
+              class="w-full p-4 bg-transparent text-base text-justify text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none focus:outline-none"
+              placeholder="متن خود را اینجا وارد کنید..."
+            ></textarea>
+            <!-- نوار ابزار پایین ناحیه متن مبدأ -->
+            <div class="flex items-center justify-between p-2">
+              <div class="flex items-center space-s-1">
+                <button
+                  id="paste-button"
+                  title="جایگذاری"
+                  class="p-2 text-gray-500 dark:text-gray-400 lg:hover:bg-gray-100 dark:lg:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor">
+                    <use href="/icons.svg#icon-paste"></use>
+                  </svg>
+                </button>
+                <button
+                  id="copy-source-button"
+                  title="کپی"
+                  class="p-2 text-gray-500 dark:text-gray-400 lg:hover:bg-gray-100 dark:lg:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor">
+                    <use href="/icons.svg#icon-copy"></use>
+                  </svg>
+                </button>
+                <button
+                  id="clear-button"
+                  title="پاک کردن"
+                  class="p-2 text-gray-500 dark:text-gray-400 lg:hover:bg-gray-100 dark:lg:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor">
+                    <use href="/icons.svg#icon-delete"></use>
+                  </svg>
+                </button>
+              </div>
+              <!-- شمارنده کاراکترها -->
+              <span
+                id="char-counter"
+                class="text-xs text-gray-400 dark:text-gray-500 pe-2"
+                >۰ / ۵۰۰۰</span
+              >
+            </div>
+          </div>
+
+          <!-- دکمه اصلی برای شروع فرآیند ترجمه -->
+          <button
+            id="translate-button"
+            class="w-full mt-2 inline-flex items-center justify-center py-3 px-8 bg-blue-700 lg:hover:bg-blue-800 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-white font-semibold rounded-lg transition-colors duration-200 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
+          >
+            ترجمه کن
+          </button>
+
+          <!-- ناحیه نمایش متن مقصد (ترجمه‌شده) -->
+          <div class="relative bg-white dark:bg-gray-800 rounded-2xl mt-2">
+            <textarea
+              id="target-text"
+              rows="8"
+              readonly
+              class="w-full p-4 bg-transparent text-base text-justify text-gray-800 dark:text-gray-200 resize-none cursor-default"
+              placeholder="ترجمه در اینجا نمایش داده می‌شود..."
+            ></textarea>
+            <!-- نوار ابزار پایین ناحیه متن مقصد -->
+            <div class="flex items-center justify-start p-2">
+              <button
+                id="copy-target-button"
+                title="کپی"
+                class="p-2 text-gray-500 dark:text-gray-400 lg:hover:bg-gray-100 dark:lg:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor">
+                  <use href="/icons.svg#icon-copy"></use>
+                </svg>
+              </button>
+            </div>
+            <!-- اسپینر بارگذاری که در حین ترجمه نمایش داده می‌شود -->
+            <div
+              id="loading-spinner"
+              class="hidden absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center rounded-2xl"
+            >
+              <svg
+                class="animate-spin h-8 w-8 text-blue-600 dark:text-blue-400"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <use href="/icons.svg#icon-spinner" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- مودال انتخاب زبان -->
+    <div
+      id="lang-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-70"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lang-modal-title"
+    >
+      <div id="lang-modal-backdrop" class="fixed inset-0"></div>
+      <div
+        class="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg m-4 p-6 sm:p-8"
+      >
+        <div class="flex items-start justify-between">
+          <h2
+            id="lang-modal-title"
+            class="text-2xl font-bold text-gray-900 dark:text-gray-100"
+          ></h2>
+          <button
+            id="lang-modal-close-button"
+            aria-label="بستن"
+            class="p-1 text-gray-400 dark:text-gray-400 lg:hover:text-gray-800 dark:lg:hover:text-gray-200 rounded-full transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor">
+              <use href="/icons.svg#icon-close"></use>
+            </svg>
+          </button>
+        </div>
+        <!-- گزینه‌های زبان به صورت پویا توسط جاوااسکریپت در این بخش قرار می‌گیرند -->
+        <div
+          id="lang-modal-options"
+          class="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3"
+        >
+          <!-- Language options will be populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- بارگذاری اسکریپت‌های ماژولار برای عملکرد صفحه -->
+    <script type="module" src="db.js"></script>
+    <script type="module" src="utils.js"></script>
+    <script type="module" src="httpErrors.js"></script>
+    <script type="module" src="api.js"></script>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

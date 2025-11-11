@@ -1,0 +1,435 @@
+<!--
+  @file settings.html
+  خلاصه یک‌خطی: این فایل صفحه تنظیمات برنامه مترجم را رندر می‌کند.
+  Dependencies: db.js, utils.js, settings.js, theme.js, tailwindcss
+  NOTE: Public user-facing page.
+  Comments updated by AI: 2025-11-11
+-->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تنظیمات - مترجم</title>
+    <!-- Stylesheets and external scripts -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
+    />
+    <script src="theme.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // پیکربندی TailwindCSS برای فعال کردن حالت تاریک (dark mode).
+      tailwind.config = {
+        darkMode: "class",
+      };
+    </script>
+    <style>
+      /* تنظیم فونت پیش‌فرض برای عناصر اصلی صفحه */
+      body,
+      input,
+      button,
+      summary {
+        font-family: "Vazirmatn", sans-serif;
+      }
+      /* استایل‌دهی برای حذف نشانگر پیش‌فرض تگ <details> */
+      details > summary {
+        list-style: none;
+      }
+      details > summary::-webkit-details-marker {
+        display: none;
+      }
+      /* چرخش آیکون فلش هنگام باز شدن <details> */
+      details[open] summary svg {
+        transform: rotate(180deg);
+      }
+      /* مخفی کردن اسکرول‌بار در تمام مرورگرها برای ظاهری تمیزتر */
+      *::-webkit-scrollbar {
+        display: none;
+      }
+      * {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200">
+    <!-- کانتینر برای نمایش اعلان‌های موقت (Toast Notifications) در بالای صفحه -->
+    <div
+      id="toast-container"
+      class="fixed top-0 inset-x-0 z-50 flex flex-col items-center p-4 space-y-2 pointer-events-none"
+    ></div>
+
+    <div class="min-h-screen flex flex-col">
+      <!-- هدر صفحه شامل عنوان و منوی ناوبری اصلی -->
+      <header class="bg-white dark:bg-gray-800">
+        <nav class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between h-16">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+              مترجم
+            </h1>
+            <!-- لینک‌های ناوبری به صفحات دیگر برنامه -->
+            <div class="flex items-baseline space-s-8">
+              <a
+                href="/"
+                class="text-gray-600 dark:text-gray-300 lg:hover:text-blue-600 dark:lg:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium"
+                >مترجم</a
+              >
+              <a
+                href="/history.html"
+                class="text-gray-600 dark:text-gray-300 lg:hover:text-blue-600 dark:lg:hover:text-blue-400 px-3 py-2 rounded-md text-sm"
+                >تاریخچه</a
+              >
+              <a
+                href="/settings.html"
+                class="text-blue-600 dark:text-blue-400 font-semibold px-3 py-2 rounded-md text-sm"
+                aria-current="page"
+                >تنظیمات</a
+              >
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      <!-- محتوای اصلی صفحه که شامل بخش‌های مختلف تنظیمات است -->
+      <main class="flex-grow">
+        <div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
+          <!-- بخش مدیریت کلیدهای API: شامل فرم افزودن و لیست کلیدهای ذخیره‌شده -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8">
+            <div class="flex items-center gap-x-3 mb-6">
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                مدیریت کلیدهای API
+              </h2>
+              <button
+                id="open-guide-modal-button"
+                aria-label="راهنمای دریافت کلید"
+                class="p-1 text-gray-400 dark:text-gray-400 lg:hover:text-blue-600 dark:lg:hover:text-blue-400 transition-colors"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor">
+                  <use href="/icons.svg#icon-question"></use>
+                </svg>
+              </button>
+            </div>
+
+            <form id="add-key-form" class="flex items-start gap-x-2">
+              <div class="relative flex-grow">
+                <label for="api-key-input" class="sr-only">کلید API جدید</label>
+                <input
+                  type="password"
+                  id="api-key-input"
+                  class="block w-full text-left appearance-none bg-gray-100 dark:bg-gray-700 rounded-lg ps-4 pe-12 py-2.5 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="کلید جدید را اینجا وارد کنید..."
+                />
+                <button
+                  type="button"
+                  id="toggle-new-key-visibility"
+                  aria-label="نمایش کلید"
+                  class="absolute inset-y-0 end-0 flex items-center p-3 text-gray-500 dark:text-gray-400 lg:hover:text-gray-800 dark:lg:hover:text-gray-200"
+                >
+                  <svg class="w-6 h-6">
+                    <use href="/icons.svg#icon-eye"></use>
+                  </svg>
+                </button>
+              </div>
+              <button
+                type="submit"
+                class="flex-shrink-0 py-2.5 px-6 bg-blue-700 lg:hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors duration-200"
+              >
+                افزودن
+              </button>
+            </form>
+
+            <div class="mt-6">
+              <h3
+                class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4"
+              >
+                کلیدهای ذخیره‌شده
+              </h3>
+              <!-- لیست کلیدهای API به صورت پویا توسط جاوااسکریپت در اینجا رندر می‌شود -->
+              <div id="api-keys-list" class="space-y-2">
+                <!-- API keys will be rendered here by JS -->
+              </div>
+              <!-- این پیام زمانی نمایش داده می‌شود که هیچ کلیدی ذخیره نشده باشد -->
+              <div
+                id="empty-keys-state"
+                class="hidden text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg"
+              >
+                هنوز هیچ کلید API ذخیره نشده است.
+              </div>
+            </div>
+          </div>
+
+          <!-- بخش ظاهر برنامه: شامل انتخاب‌گر تم (روشن، تاریک، سیستم) -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8">
+            <h2
+              class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6"
+            >
+              ظاهر برنامه
+            </h2>
+            <div>
+              <label class="font-medium text-gray-800 dark:text-gray-200"
+                >انتخاب تم</label
+              >
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                تم مورد نظر خود را برای نمایش برنامه انتخاب کنید.
+              </p>
+              <div
+                id="theme-selector"
+                class="mt-4 grid grid-cols-3 gap-3"
+                role="radiogroup"
+              >
+                <button
+                  data-theme-value="light"
+                  role="radio"
+                  aria-checked="false"
+                  class="theme-button w-full flex items-center justify-center gap-x-2 text-center p-3 rounded-lg font-semibold transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                >
+                  <svg class="w-5 h-5">
+                    <use href="/icons.svg#icon-sun"></use>
+                  </svg>
+                  <span>روشن</span>
+                </button>
+                <button
+                  data-theme-value="dark"
+                  role="radio"
+                  aria-checked="false"
+                  class="theme-button w-full flex items-center justify-center gap-x-2 text-center p-3 rounded-lg font-semibold transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                >
+                  <svg class="w-5 h-5">
+                    <use href="/icons.svg#icon-moon"></use>
+                  </svg>
+                  <span>تاریک</span>
+                </button>
+                <button
+                  data-theme-value="system"
+                  role="radio"
+                  aria-checked="true"
+                  class="theme-button w-full flex items-center justify-center gap-x-2 text-center p-3 rounded-lg font-semibold transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                >
+                  <!-- آیکون‌های واکنش‌گرا برای تم سیستم که بر اساس اندازه صفحه نمایش تغییر می‌کنند -->
+                  <svg class="w-5 h-5 md:hidden">
+                    <use href="/icons.svg#icon-system-mobile"></use>
+                  </svg>
+                  <svg class="w-5 h-5 hidden md:block lg:hidden">
+                    <use href="/icons.svg#icon-system-tablet"></use>
+                  </svg>
+                  <svg class="w-5 h-5 hidden lg:block">
+                    <use href="/icons.svg#icon-system-desktop"></use>
+                  </svg>
+                  <span>سیستم</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- بخش رفتار برنامه: شامل تنظیمات مربوط به ترجمه و کپی خودکار -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8">
+            <h2
+              class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6"
+            >
+              رفتار برنامه
+            </h2>
+            <div class="space-y-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label
+                    for="auto-translate-toggle"
+                    class="font-medium text-gray-800 dark:text-gray-200"
+                    >ترجمه خودکار پس از جایگذاری</label
+                  >
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    با فعال‌سازی، کلیک روی دکمه جایگذاری، ترجمه را آغاز می‌کند.
+                  </p>
+                </div>
+                <div
+                  id="auto-translate-toggle"
+                  role="switch"
+                  aria-checked="false"
+                  tabindex="0"
+                  class="relative flex-shrink-0 h-6 w-11 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-gray-200 dark:bg-gray-700 focus:outline-none"
+                >
+                  <div
+                    class="h-5 w-5 rounded-full bg-white transform transition-transform duration-200 ease-in-out"
+                  ></div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <label
+                    for="auto-copy-toggle"
+                    class="font-medium text-gray-800 dark:text-gray-200"
+                    >کپی خودکار نتیجه ترجمه</label
+                  >
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    با فعال‌سازی، متن ترجمه‌شده به محض آماده شدن کپی می‌شود.
+                  </p>
+                </div>
+                <div
+                  id="auto-copy-toggle"
+                  role="switch"
+                  aria-checked="false"
+                  tabindex="0"
+                  class="relative flex-shrink-0 h-6 w-11 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-gray-200 dark:bg-gray-700 focus:outline-none"
+                >
+                  <div
+                    class="h-5 w-5 rounded-full bg-white transform transition-transform duration-200 ease-in-out"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- بخش مدیریت تاریخچه: شامل دکمه پاک کردن کل تاریخچه -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8">
+            <h2
+              class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6"
+            >
+              مدیریت تاریخچه
+            </h2>
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-medium text-gray-800 dark:text-gray-200">
+                  پاک کردن کل تاریخچه
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  تمام ترجمه‌های ذخیره‌شده برای همیشه حذف خواهند شد.
+                </p>
+              </div>
+              <button
+                id="clear-history-button"
+                class="flex-shrink-0 py-2.5 px-6 bg-red-100 text-red-700 lg:hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:lg:hover:bg-red-900/60 font-semibold rounded-lg transition-colors duration-200"
+              >
+                پاک کردن
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- مودال راهنما: پنجره‌ای که راهنمای گام‌به‌گام دریافت کلید API را نمایش می‌دهد -->
+    <div
+      id="guide-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-70"
+      aria-labelledby="guide-modal-title"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        id="guide-modal-backdrop"
+        class="fixed inset-0"
+        aria-hidden="true"
+      ></div>
+      <div
+        class="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl m-4 p-6 sm:p-8"
+      >
+        <div class="flex items-start justify-between">
+          <h2
+            id="guide-modal-title"
+            class="text-2xl font-bold text-gray-900 dark:text-gray-100"
+          >
+            راهنمای دریافت کلید API
+          </h2>
+          <button
+            id="close-guide-modal-button"
+            aria-label="بستن مودال"
+            class="p-1 text-gray-400 dark:text-gray-400 lg:hover:text-gray-800 dark:lg:hover:text-gray-200 rounded-full transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor">
+              <use href="/icons.svg#icon-close"></use>
+            </svg>
+          </button>
+        </div>
+        <div
+          class="mt-6 space-y-4 text-gray-700 dark:text-gray-300 leading-relaxed"
+        >
+          <p>
+            برای استفاده از مترجم، به یک کلید API از Google AI نیاز دارید. این
+            کلید رایگان است. مراحل زیر را دنبال کنید:
+          </p>
+          <ol class="list-decimal list-inside space-y-3 ps-2">
+            <li>
+              به وب‌سایت
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-600 dark:text-blue-400 font-semibold underline"
+                >Google AI Studio</a
+              >
+              بروید.
+            </li>
+            <li>با حساب گوگل خود وارد شوید.</li>
+            <li>
+              روی دکمه
+              <strong class="font-semibold text-gray-800 dark:text-gray-100"
+                >"Create API key in new project"</strong
+              >
+              کلیک کنید.
+            </li>
+            <li>
+              کلید ساخته‌شده را کپی کنید. این کلید یک رشته طولانی از حروف و
+              اعداد است.
+            </li>
+            <li>
+              کلید کپی‌شده را در کادر زیر وارد کرده و روی دکمه "افزودن" کلیک
+              کنید.
+            </li>
+          </ol>
+          <p class="text-sm text-gray-500 dark:text-gray-400 pt-2">
+            کلیدهای شما به صورت امن فقط در مرورگر شما ذخیره می‌شوند و به هیچ
+            سروری ارسال نمی‌گردند.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- مودال تایید: پنجره‌ای که برای تایید عملیات حساس (مانند پاک کردن تاریخچه) نمایش داده می‌شود -->
+    <div
+      id="confirm-clear-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-70"
+      aria-labelledby="confirm-modal-title"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        id="confirm-modal-backdrop"
+        class="fixed inset-0"
+        aria-hidden="true"
+      ></div>
+      <div
+        class="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm m-4 p-6 sm:p-8 text-center"
+      >
+        <h2
+          id="confirm-modal-title"
+          class="text-2xl font-bold text-gray-900 dark:text-gray-100"
+        >
+          آیا مطمئن هستید؟
+        </h2>
+        <p class="mt-4 text-gray-600 dark:text-gray-300">
+          این عمل تمام تاریخچه ترجمه‌های شما را برای همیشه پاک می‌کند و قابل
+          بازگشت نیست.
+        </p>
+        <div class="mt-8 flex justify-center gap-x-4">
+          <button
+            id="cancel-clear-button"
+            class="flex-1 py-2.5 px-6 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 lg:hover:bg-gray-300 dark:lg:hover:bg-gray-600 font-semibold rounded-lg transition-colors"
+          >
+            لغو
+          </button>
+          <button
+            id="confirm-clear-button"
+            class="flex-1 py-2.5 px-6 bg-red-600 text-white lg:hover:bg-red-700 font-semibold rounded-lg transition-colors"
+          >
+            بله، حذف کن
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- بارگذاری اسکریپت‌های ماژولار برای عملکرد صفحه -->
+    <script type="module" src="db.js"></script>
+    <script type="module" src="utils.js"></script>
+    <script type="module" src="settings.js"></script>
+  </body>
+</html>
